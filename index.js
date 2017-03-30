@@ -36,11 +36,18 @@ Sentinel.prototype.createClient = function(masterName, opts) {
                 console.error("Unable to subscribe to Sentinel PUBSUB");
             }
         });
-        pubsubClient.on("message", function(channel, message) {
-            console.warn("Received +switch-master message from Redis Sentinel.",
-                         " Reconnecting clients.");
-            self.reconnectAllClients();
-        });
+      pubsubClient.on("message", function (channel, message) {
+          var failedOverMaster = message.split(" ")[0];
+          console.warn("Received +switch-master message from Redis Sentinel for master", failedOverMaster);
+          if (failedOverMaster === masterName) {
+              console.warn("Reconnecting clients.");
+              self.reconnectAllClients();
+          }
+          else {
+              console.warn("Ignoring the message");
+          }
+
+      });
         pubsubClient.on("error", function(error) {});
         self.pubsub.push(pubsubClient);
     }

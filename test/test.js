@@ -70,7 +70,7 @@ describe('Redis Sentinel tests', function() {
             var redisClient = sentinel.createClient(endpoints, {role: 'sentinel'});
             redisClient.on('ready', function() {
                 expect(redisClient.connectionOption.host).to.equal('127.0.0.1');
-                expect(redisClient.connectionOption.port).to.equal("26380");
+                expect(["26380", "26379"]).to.contain(redisClient.connectionOption.port);
                 done();
             });
         });
@@ -113,7 +113,7 @@ describe('Redis Sentinel tests', function() {
             var redisClient = sentinel.createClient(endpoints, {role: 'sentinel'});
             redisClient.on('ready', function() {
                 expect(redisClient.connectionOption.host).to.equal('127.0.0.1');
-                expect(redisClient.connectionOption.port).to.equal("26380");
+                expect(["26380", "26379"]).to.contain(redisClient.connectionOption.port);
                 done();
             });
         });

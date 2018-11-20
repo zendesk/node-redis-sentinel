@@ -1,5 +1,6 @@
 var redis = require('redis'),
     net = require('net'),
+    logging = require('minilog')('redis-sentinel:Sentinel'),
     when = require('when');
 
 function Sentinel(endpoints) {
@@ -33,18 +34,18 @@ Sentinel.prototype.createClient = function(masterName, opts) {
         pubsubClient = this.createClientInternal(masterName, pubsubOpts);
         pubsubClient.subscribe("+switch-master", function(error) {
             if (error) {
-                console.error("Unable to subscribe to Sentinel PUBSUB");
+                logging.error("Unable to subscribe to Sentinel PUBSUB");
             }
         });
         pubsubClient.on("message", function (channel, message) {
           var failedOverMaster = message.split(" ")[0];
-          console.warn("Received +switch-master message from Redis Sentinel for master", failedOverMaster);
+          logging.warn("Received +switch-master message from Redis Sentinel for master", failedOverMaster);
           if (failedOverMaster === masterName) {
-              console.warn("Reconnecting clients.");
-              self.reconnectAllClients();
+            logging.warn("Reconnecting clients.");
+            self.reconnectAllClients();
           }
           else {
-              console.warn("Ignoring the message");
+            logging.warn("Ignoring the message");
           }
         });
         pubsubClient.on("error", function(error) {});
@@ -61,7 +62,7 @@ Sentinel.prototype.createClientInternal = function(masterName, opts) {
 
     opts = opts || {};
     var role = opts.role || 'master';
-    console.info("Sentinel.createClientInternal: role - " + role )
+    logging.debug("Sentinel.createClientInternal: role - " + role )
     var endpoints = this.endpoints;
 
 
@@ -120,7 +121,7 @@ Sentinel.prototype.createClientInternal = function(masterName, opts) {
                     } else {
                         // Try reconnecting - remove the old stream first.
                         client.stream.end();
-                        console.info("refreshEndpoints : " + resolver.name + " responded with host(" + ip + ") & port(" + port + ")")
+                        logging.debug("refreshEndpoints : " + resolver.name + " responded with host(" + ip + ") & port(" + port + ")")
                         client.connectionOption.port = port;
                         client.connectionOption.host = ip;
                         client.connection_gone("sentinel induced refresh");
@@ -201,7 +202,7 @@ function resolveClient() {
     // Because finding the master is going to be an async list we will terminate
     // when we find one then use promises...
     promise = endpoints.reduce(function(soFar, endpoint) {
-        console.info("Calling " + checkEndpointFn.name +" with endpoint(" + endpoint.host + ":" +endpoint.port + ")")
+        logging.debug("Calling " + checkEndpointFn.name +" with endpoint(" + endpoint.host + ":" +endpoint.port + ")")
         return soFar.then(function() {
             var deferred = when.defer();
 
@@ -214,7 +215,7 @@ function resolveClient() {
                 } else {
                     // This is the endpoint that has responded so stick it on the top of
                     // the list
-                    console.info(checkEndpointFn.name + " got a response on sentinal endpoint host:"+ endpoint.host + ", port:" + endpoint.port)
+                    logging.debug(checkEndpointFn.name + " got a response on sentinel endpoint host:"+ endpoint.host + ", port:" + endpoint.port)
                     var index = endpoints.indexOf(endpoint);
                     endpoints.splice(index, 1);
                     endpoints.unshift(endpoint);
@@ -242,7 +243,7 @@ function isSentinelOk(endpoint, callback) {
     var client = redis.createClient(endpoint.port, endpoint.host, {connect_timeout: 1000});
     var callbackSent = false;
     client.on("error", function(err) {
-        console.log("isSentinelOk Error - " + endpoint.host + ":" + endpoint.port + " - " + err)
+        logging.error("isSentinelOk Error - " + endpoint.host + ":" + endpoint.port + " - " + err)
         if (!callbackSent) {
             callbackSent = true;
             callback(err);
@@ -285,7 +286,7 @@ function getMasterFromEndpoint(endpoint, masterName, callback) {
         } else {
             var ip = result[0];
             var port = result[1];
-            console.info("getMasterFromEndpoint - Redis master host: " + ip + ", port: " + port )
+            logging.debug("getMasterFromEndpoint - Redis master host: " + ip + ", port: " + port )
             callback(null, ip, port);
         }
     });

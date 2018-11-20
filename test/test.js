@@ -1,8 +1,11 @@
 var sentinel = require('../');
 var expect = require('chai').expect;
 var redis = require('redis');
+var Minilog = require('minilog');
 
 describe('Redis Sentinel tests', function() {
+
+    Minilog.enable()
 
     describe('initial connection', function() {
 

@@ -15,7 +15,8 @@
   ],
   "dependencies": {
     "redis": "0.12.x",
-    "when": "^3.5.1"
+    "when": "^3.5.1",
+    "minilog": "*"
   },
   "devDependencies": {
     "mocha": "*",
